@@ -29,7 +29,8 @@ public class AudioPeer : MonoBehaviour
 
     //进度条控制
     SliderUI _slider;        //进度控制
-    int _currentIndex = 0; //当前音频索引
+    [HideInInspector]
+    public static int _currentIndex = 0; //当前音频索引
 
     void Start()
     {
@@ -37,6 +38,8 @@ public class AudioPeer : MonoBehaviour
         _audioBand = new float[8];
         _audioBandBuffer = new float[8];
         _audioSource = this.GetComponent<AudioSource>();
+        _audioSource.clip = Date_demo.Instance.clips[_currentIndex];
+        _audioSource.Play();
         _slider = GameObject.Find("Slider").GetComponent<SliderUI>();      //获取重写的Slider组件
         AudioProfile(_audioProfile);
     }
@@ -59,6 +62,11 @@ public class AudioPeer : MonoBehaviour
         if (_audioSource.isPlaying && SliderUI.State == SliderState.Normal)
         {
             _slider.value = _audioSource.time / _audioSource.clip.length;     //进度条实时更新
+            //判断歌曲是否播放完毕，开始播放下一首
+            if (_audioSource.time >= _audioSource.clip.length * 0.99f)
+            {
+                OnPlayNext();
+            }
         }
         if (SliderUI.State == SliderState.Up)      //拖拽进度条
         {
@@ -66,6 +74,21 @@ public class AudioPeer : MonoBehaviour
             _slider.Reset();
         }
     }
+
+    void OnPlayNext()      //播放下一曲
+    {
+        _audioSource.time = 0;
+        _currentIndex++;
+        if (_currentIndex >= Date_demo.Instance.clips.Length)
+        {
+            _currentIndex = 0;
+
+        }
+        _audioSource.clip = Date_demo.Instance.clips[_currentIndex];
+        _audioSource.Play();
+
+    }
+
 
     void AudioProfile(float audioProfile)
     {

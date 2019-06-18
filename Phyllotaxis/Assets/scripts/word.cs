@@ -7,30 +7,42 @@ using UnityEngine.UI;
 public class word : MonoBehaviour
 {
 
-    float[] Time;        //歌词时间数组
-    string[] Word;       //时间数组对应的单句歌词
-    int count;          //时间数组大小
-    int _index;         //当前歌曲播放时间对应的数组下标
+     float[] Time;        //歌词时间数组
+    [HideInInspector]
+    public static string[] Word;       //时间数组对应的单句歌词
+     int count;          //时间数组大小
+    [HideInInspector]
+    public  static int _index;         //当前歌曲播放时间对应的数组下标
     public AudioSource _audioSource;
-    private Text _wordText;
+    [HideInInspector]
+    public static bool SongWord;         //判断是否播放歌词
     // Use this for initialization
     void Start()
     {
         SortWordTime();
-        _wordText = this.GetComponent<Text>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        isSongText();
         Find(_audioSource.time);
-        ChangeText();
     }
 
-    void SortWordTime()
+    void isSongText()          //判断SongWord的值
+    {
+        if (AudioPeer._currentIndex == 1)
+            SongWord = true;
+        if (AudioPeer._currentIndex == 0)
+            SongWord = false;
+    }
+
+    void SortWordTime()       //或缺lrc文件的时间数组和歌词数组并排序
     {
         count = 0;
-        string str = File.ReadAllText(@"C:\Users\sp151\Desktop\29759733.lrc");
+        string str = File.ReadAllText(@"C:\Users\wowzbh\Desktop\可乐.lrc");
+        if (str == null)
+            Debug.Log("error");
         MatchCollection asd = Regex.Matches(str, @"\[.*?[\u4E00-\u9FA5]{1,100}\\");//切分成单个时间和对应歌词
         string[] numt = new string[asd.Count];
         for (int i = 0; i < asd.Count; i++)
@@ -87,11 +99,6 @@ public class word : MonoBehaviour
             Word[j + 1] = flag2;
         }
 
-    }
-
-    void ChangeText()
-    {
-        _wordText.text = Word[_index];
     }
 
     void Find(float _audioTime)          //二分查找
