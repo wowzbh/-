@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(AudioSource))]
 public class AudioPeer : MonoBehaviour
@@ -22,15 +26,18 @@ public class AudioPeer : MonoBehaviour
 
     //平滑变化
     public float _audioProfile;
-    [HideInInspector]
-    public static float _Amplitude, _AmplitudeBuffer;
-    private float _AmplitudeHighest;
+
+    //进度条控制
+    SliderUI _slider;        //进度控制
+    int _currentIndex = 0; //当前音频索引
+
     void Start()
     {
         //实例化音乐文件
         _audioBand = new float[8];
         _audioBandBuffer = new float[8];
         _audioSource = this.GetComponent<AudioSource>();
+        _slider = GameObject.Find("Slider").GetComponent<SliderUI>();      //获取重写的Slider组件
         AudioProfile(_audioProfile);
     }
 
@@ -40,25 +47,24 @@ public class AudioPeer : MonoBehaviour
         MakeFrequencyBands();
         BandBuffer();
         CreateAudioBands();
-        GetAmplitude();
+        AudioSlider();
     }
 
-    void GetAmplitude()
+    void AudioSlider()      //进度条实时更新
     {
-        float _CurrentAmplitude = 0;
-        float _CurrentAmplitudeBuffer = 0;
-        for (int i = 0; i < 8; i++)
+        if (_audioSource == null || _audioSource.clip == null)
         {
-            _CurrentAmplitude += _audioBand[i];
-            _CurrentAmplitudeBuffer += _audioBandBuffer[i];
+            return;
         }
-        if (_CurrentAmplitude > _AmplitudeHighest)
+        if (_audioSource.isPlaying && SliderUI.State == SliderState.Normal)
         {
-            _AmplitudeHighest = _CurrentAmplitude;
+            _slider.value = _audioSource.time / _audioSource.clip.length;     //进度条实时更新
         }
-        _Amplitude = _CurrentAmplitude / _AmplitudeHighest;
-        _AmplitudeBuffer = _CurrentAmplitudeBuffer / _AmplitudeHighest;
-
+        if (SliderUI.State == SliderState.Up)      //拖拽进度条
+        {
+            _audioSource.time = _slider.value * _audioSource.clip.length;
+            _slider.Reset();
+        }
     }
 
     void AudioProfile(float audioProfile)
@@ -69,7 +75,7 @@ public class AudioPeer : MonoBehaviour
         }
     }
 
-    void CreateAudioBands()
+    void CreateAudioBands()           //将 freqBand 与 _bandBuffer 数组转化到 _audioBand中
     {
         for (int i = 0; i < 8; i++)
         {
@@ -82,15 +88,15 @@ public class AudioPeer : MonoBehaviour
         }
     }
 
-    void GetSpectrumAudioSource()
+       
+    void GetSpectrumAudioSource()     //获取音乐的频谱信息，并将频谱储存在_samples数组中
     {
-        //获取音乐的频谱信息，并将频谱储存在_samples数组中
         _audioSource.GetSpectrumData(_samplesLeft, 0, FFTWindow.Blackman);
         _audioSource.GetSpectrumData(_samplesRight, 1, FFTWindow.Blackman);
 
     }
 
-    void BandBuffer()
+    void BandBuffer()          //band 变化的平滑设置
     {
         for (int i = 0; i < 8; ++i)
         {
@@ -107,7 +113,7 @@ public class AudioPeer : MonoBehaviour
         }
     }
 
-    void MakeFrequencyBands()
+    void MakeFrequencyBands()        //制作频率数组  将512个频谱数组转换到频率数组中
     {
         int count = 0;
         for (int i = 0; i < 8; i++)
